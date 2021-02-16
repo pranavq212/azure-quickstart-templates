@@ -1,5 +1,5 @@
 {
-  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
     "adminUsername": {
@@ -34,7 +34,7 @@
     },
     "vmSize": {
       "type": "string",
-      "defaultValue": "Standard_A0",
+      "defaultValue": "Standard_D1_v2",
       "metadata": {
         "description": "Size of the Elasticsearch nodes"
       }
@@ -50,29 +50,38 @@
       "metadata": {
         "description": "Namespace for resources created by this template"
       }
+    },
+    "location": {
+      "type": "string",
+      "metadata": {
+        "description": "Location for all resources."
+      }
     }
   },
   "variables": {
-    "subnetRef": "[concat(resourceId('Microsoft.Network/virtualNetworks', parameters('subnet').vnet), '/subnets/', parameters('subnet').name)]",
+    "subnetRef": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('subnet').vnet, parameters('subnet').name)]",
     "vmName": "[concat(parameters('namespace'), '-vm')]",
     "nicName": "[concat(parameters('namespace'), '-nic')]"
   },
   "resources": [
     {
-      "apiVersion": "2015-06-15",
+      "apiVersion": "2019-12-01",
       "type": "Microsoft.Compute/availabilitySets",
       "name": "es-marvel-set",
-      "location": "[resourceGroup().location]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "Aligned"
+      },
       "properties": {
         "platformUpdateDomainCount": 3,
         "platformFaultDomainCount": 3
       }
     },
     {
-      "apiVersion": "2016-03-30",
+      "apiVersion": "2020-05-01",
       "type": "Microsoft.Network/networkInterfaces",
       "name": "[concat(variables('nicName'), copyindex())]",
-      "location": "[resourceGroup().location]",
+      "location": "[parameters('location')]",
       "copy": {
         "name": "marvelNodesNicLoop",
         "count": 3
@@ -93,10 +102,10 @@
       }
     },
     {
-      "apiVersion": "2015-06-15",
+      "apiVersion": "2019-12-01",
       "type": "Microsoft.Compute/virtualMachines",
       "name": "[concat(variables('vmName'), copyindex())]",
-      "location": "[resourceGroup().location]",
+      "location": "[parameters('location')]",
       "copy": {
         "name": "marvelVmLoop",
         "count": 3
@@ -121,10 +130,7 @@
         "storageProfile": {
           "imageReference": "[parameters('osSettings').imageReference]",
           "osDisk": {
-            "name": "osdisk",
-            "vhd": {
-              "uri": "[concat(reference(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')), '2016-01-01').primaryEndpoints.blob, 'vhds/', variables('vmName'), copyindex(), '-osdisk.vhd')]"
-            },
+            "name": "[concat(variables('vmName'), copyindex(),'_OSDisk')]",
             "caching": "ReadWrite",
             "createOption": "FromImage"
           }
@@ -141,8 +147,8 @@
         {
           "type": "extensions",
           "name": "installelasticsearch",
-          "apiVersion": "2015-06-15",
-          "location": "[resourceGroup().location]",
+          "apiVersion": "2019-12-01",
+          "location": "[parameters('location')]",
           "dependsOn": [
             "[resourceId('Microsoft.Compute/virtualMachines', concat(variables('vmName'), copyindex()))]"
           ],
@@ -152,7 +158,7 @@
             "typeHandlerVersion": "[parameters('osSettings').extensionSettings.marvel.typeHandlerVersion]",
             "settings": {
               "fileUris": "[parameters('osSettings').extensionSettings.marvel.settings.fileUris]",
-              "commandToExecute": "[concat(parameters('osSettings').extensionSettings.marvel.settings.commandToExecute, listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')), '2016-01-01').keys[0].value)]"
+              "commandToExecute": "[concat(parameters('osSettings').extensionSettings.marvel.settings.commandToExecute, listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')), '2019-06-01').keys[0].value)]"
             }
           }
         }

@@ -1,5 +1,5 @@
 {
-  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
     "clusterName": {
@@ -48,33 +48,40 @@
       }
     },
     "_artifactsLocation": {
-        "type": "string",
-        "metadata": {
-            "description": "The base URI where artifacts required by this template are located. When the template is deployed using the accompanying scripts, a private location in the subscription will be used and this value will be automatically generated."
-        },
-        "defaultValue": "https://hditutorialdata.blob.core.windows.net/usesqoop/"
+      "type": "string",
+      "metadata": {
+        "description": "The base URI where artifacts required by this template are located. When the template is deployed using the accompanying scripts, a private location in the subscription will be used and this value will be automatically generated."
+      },
+      "defaultValue": "https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/101-hdinsight-linux-with-sql-database/"
     },
     "_artifactsLocationSasToken": {
-        "type": "securestring",
-        "metadata": {
-            "description": "The sasToken required to access _artifactsLocation.  When the template is deployed using the accompanying scripts, a sasToken will be automatically generated."
-        },
-        "defaultValue": ""
+      "type": "securestring",
+      "metadata": {
+        "description": "The sasToken required to access _artifactsLocation.  When the template is deployed using the accompanying scripts, a sasToken will be automatically generated."
+      },
+      "defaultValue": ""
     },
-    "bacpacFileName":{
-      "type":"string",
+    "bacpacFileName": {
+      "type": "string",
       "defaultValue": "SqoopTutorial-2016-2-23-11-2.bacpac",
       "metadata": {
         "description": "The backpac for configure the database and tables for the Use Sqoop in HDInsight tutorial."
       }
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "Location for all resources."
+      }
     }
   },
   "variables": {
-    "defaultStorageAccount":{
+    "defaultStorageAccount": {
       "name": "[uniqueString(resourceGroup().id)]",
       "type": "Standard_LRS"
     },
-    "sqlDatabase":{
+    "sqlDatabase": {
       "serverName": "[concat(parameters('clusterName'),'dbserver')]",
       "databaseName": "[concat(parameters('clusterName'),'db')]"
     }
@@ -83,25 +90,24 @@
     {
       "type": "Microsoft.Storage/storageAccounts",
       "name": "[variables('defaultStorageAccount').name]",
-      "location": "[resourceGroup().location]",
-      "apiVersion": "2016-01-01",
+      "location": "[parameters('location')]",
+      "apiVersion": "2019-06-01",
       "sku": {
-          "name": "[variables('defaultStorageAccount').type]"
+        "name": "[variables('defaultStorageAccount').type]"
       },
-      "kind": "Storage", 
+      "kind": "StorageV2",
       "properties": {}
     },
     {
       "name": "[parameters('clusterName')]",
       "type": "Microsoft.HDInsight/clusters",
-      "location": "[resourceGroup().location]",
-      "apiVersion": "2015-03-01-preview",
-      "dependsOn": [ "[concat('Microsoft.Storage/storageAccounts/',variables('defaultStorageAccount').name)]" ],
-      "tags": {
-
-      },
+      "location": "[parameters('location')]",
+      "apiVersion": "2018-06-01-preview",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts/', variables('defaultStorageAccount').name)]"
+      ],
       "properties": {
-        "clusterVersion": "3.5",
+        "clusterVersion": "3.6",
         "osType": "Linux",
         "clusterDefinition": {
           "kind": "hadoop",
@@ -116,10 +122,10 @@
         "storageProfile": {
           "storageaccounts": [
             {
-              "name": "[replace(replace(reference(resourceId('Microsoft.Storage/storageAccounts', variables('defaultStorageAccount').name), '2016-01-01').primaryEndpoints.blob,'https://',''),'/','')]",
+              "name": "[replace(replace(reference(resourceId('Microsoft.Storage/storageAccounts', variables('defaultStorageAccount').name), '2019-06-01').primaryEndpoints.blob,'https://',''),'/','')]",
               "isDefault": true,
               "container": "[parameters('clusterName')]",
-              "key": "[listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('defaultStorageAccount').name), '2016-01-01').keys[0].value]"
+              "key": "[listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('defaultStorageAccount').name), '2019-06-01').keys[0].value]"
             }
           ]
         },
@@ -127,7 +133,7 @@
           "roles": [
             {
               "name": "headnode",
-              "targetInstanceCount": "2",
+              "targetInstanceCount": 2,
               "hardwareProfile": {
                 "vmSize": "Standard_D3_v2"
               },
@@ -156,14 +162,13 @@
       }
     },
     {
-      "name": "[variables('sqlDatabase').serverName]",
       "type": "Microsoft.Sql/servers",
-      "location": "[resourceGroup().location]",
+      "name": "[variables('sqlDatabase').serverName]",
+      "location": "[parameters('location')]",
       "tags": {
-        "displayName": "SqlServer"        
+        "displayName": "SqlServer"
       },
-      "apiVersion": "2014-04-01",
-      "dependsOn": [ ],
+      "apiVersion": "2020-02-02-preview",
       "properties": {
         "administratorLogin": "[parameters('sqlAdminLogin')]",
         "administratorLoginPassword": "[parameters('sqlAdminPassword')]",
@@ -171,13 +176,13 @@
       },
       "resources": [
         {
-          "name": "[variables('sqlDatabase').databaseName]",
           "type": "databases",
-          "location": "[resourceGroup().location]",
+          "name": "[variables('sqlDatabase').databaseName]",
+          "location": "[parameters('location')]",
           "tags": {
             "displayName": "Database"
           },
-          "apiVersion": "2015-01-01",
+          "apiVersion": "2020-02-02-preview",
           "dependsOn": [
             "[variables('sqlDatabase').serverName]"
           ],
@@ -197,22 +202,22 @@
               ],
               "properties": {
                 "operationMode": "Import",
-                "storageKey": "?",
+                "storageKey": "[parameters('_artifactsLocationSasToken')]",
                 "storageKeyType": "SharedAccessKey",
                 "administratorLogin": "[parameters('sqlAdminLogin')]",
                 "administratorLoginPassword": "[parameters('sqlAdminPassword')]",
-                "storageUri": "[concat(parameters('_artifactsLocation'), parameters('bacpacFileName'), parameters('_artifactsLocationSasToken'))]"
+                "storageUri": "[concat(parameters('_artifactsLocation'), 'Bacpac/', parameters('bacpacFileName'))]"
               }
             }
           ]
         },
         {
-          "name": "AllowAllAzureIps",
           "type": "firewallrules",
-          "location": "[resourceGroup().location]",
-          "apiVersion": "2014-04-01",
+          "name": "AllowAllAzureIps",
+          "location": "[parameters('location')]",
+          "apiVersion": "2020-02-02-preview",
           "dependsOn": [
-            "[variables('sqlDatabase').serverName]"
+            "[resourceId('Microsoft.Sql/servers/', variables('sqlDatabase').serverName)]"
           ],
           "properties": {
             "startIpAddress": "0.0.0.0",
@@ -230,10 +235,10 @@
     "cluster": {
       "type": "object",
       "value": "[reference(resourceId('Microsoft.HDInsight/clusters',parameters('clusterName')))]"
-    },    
+    },
     "sqlSvrFqdn": {
       "type": "string",
-      "value": "[reference(concat('Microsoft.Sql/servers/', variables('sqlDatabase').serverName)).fullyQualifiedDomainName]"
+      "value": "[reference(resourceId('Microsoft.Sql/servers/', variables('sqlDatabase').serverName)).fullyQualifiedDomainName]"
     }
   }
 }

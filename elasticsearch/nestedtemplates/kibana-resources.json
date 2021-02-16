@@ -1,5 +1,5 @@
 {
-  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
     "namespace": {
@@ -38,11 +38,23 @@
       "metadata": {
         "description": "Platform and OS settings"
       }
+    },
+    "vmSize": {
+      "type": "string",
+      "defaultValue": "Standard_D1_v2",
+      "metadata": {
+        "description": "Jump box VM size"
+      }
+    },
+    "location": {
+      "type": "string",
+      "metadata": {
+        "description": "Location for all resources."
+      }
     }
   },
   "variables": {
-    "vmSize": "Standard_A1",
-    "subnetRef": "[concat(resourceId('Microsoft.Network/virtualNetworks', parameters('subnet').vnet), '/subnets/', parameters('subnet').name)]",
+    "subnetRef": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('subnet').vnet, parameters('subnet').name)]",
     "vmName": "[concat(parameters('namespace'), '-vm')]",
     "publicIpName": "[concat(parameters('namespace'), '-pip')]",
     "securityGroupName": "[concat(parameters('namespace'), '-nsg')]",
@@ -50,10 +62,10 @@
   },
   "resources": [
     {
-      "apiVersion": "2016-03-30",
+      "apiVersion": "2020-05-01",
       "type": "Microsoft.Network/networkSecurityGroups",
       "name": "[variables('securityGroupName')]",
-      "location": "[resourceGroup().location]",
+      "location": "[parameters('location')]",
       "properties": {
         "securityRules": [
           {
@@ -88,24 +100,27 @@
       }
     },
     {
-      "apiVersion": "2016-03-30",
+      "apiVersion": "2020-05-01",
       "type": "Microsoft.Network/publicIPAddresses",
       "name": "[variables('publicIpName')]",
-      "location": "[resourceGroup().location]",
+      "location": "[parameters('location')]",
       "properties": {
         "publicIPAllocationMethod": "Static"
       }
     },
     {
-      "apiVersion": "2016-03-30",
+      "apiVersion": "2020-05-01",
       "type": "Microsoft.Network/networkInterfaces",
       "name": "[variables('nicName')]",
-      "location": "[resourceGroup().location]",
+      "location": "[parameters('location')]",
       "dependsOn": [
         "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpName'))]",
         "[resourceId('Microsoft.Network/networkSecurityGroups', variables('securityGroupName'))]"
       ],
       "properties": {
+        "networkSecurityGroup": {
+          "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('securityGroupName'))]"
+        },
         "ipConfigurations": [
           {
             "name": "ipconfig1",
@@ -116,9 +131,6 @@
               },
               "subnet": {
                 "id": "[variables('subnetRef')]"
-              },
-              "networkSecurityGroup": {
-                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('securityGroupName'))]"
               }
             }
           }
@@ -126,16 +138,16 @@
       }
     },
     {
-      "apiVersion": "2015-06-15",
+      "apiVersion": "2019-12-01",
       "type": "Microsoft.Compute/virtualMachines",
       "name": "[variables('vmName')]",
-      "location": "[resourceGroup().location]",
+      "location": "[parameters('location')]",
       "dependsOn": [
         "[resourceId('Microsoft.Network/networkInterfaces', variables('nicName'))]"
       ],
       "properties": {
         "hardwareProfile": {
-          "vmSize": "[variables('vmSize')]"
+          "vmSize": "[parameters('vmSize')]"
         },
         "osProfile": {
           "computerName": "kibana",
@@ -146,10 +158,7 @@
         "storageProfile": {
           "imageReference": "[parameters('osSettings').imageReference]",
           "osDisk": {
-            "name": "osdisk",
-            "vhd": {
-              "uri": "[concat(reference(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')), '2016-01-01').primaryEndpoints.blob, 'vhds/', variables('vmName'), '-osdisk.vhd')]"
-            },
+            "name": "[concat(variables('vmName'),'_OSDisk')]",
             "caching": "ReadWrite",
             "createOption": "FromImage"
           }
@@ -166,8 +175,8 @@
         {
           "type": "extensions",
           "name": "installkibana",
-          "apiVersion": "2015-06-15",
-          "location": "[resourceGroup().location]",
+          "apiVersion": "2019-12-01",
+          "location": "[parameters('location')]",
           "dependsOn": [
             "[resourceId('Microsoft.Compute/virtualMachines', variables('vmName'))]"
           ],

@@ -1,5 +1,5 @@
 {
-  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
     "networkSettings": {
@@ -13,35 +13,40 @@
       "metadata": {
         "Description": "namespace"
       }
+    },
+    "location": {
+      "type": "string",
+      "metadata": {
+        "description": "Location for all resources."
+      }
     }
   },
   "variables": {
     "storageAccountName": "[concat(uniquestring(resourceGroup().id), 'standardsa')]",
-	"apiVersion": "2015-06-15"
-  
   },
   "resources": [
     {
-      "apiVersion": "[variables('apiVersion')]",
+      "apiVersion": "2019-06-01",
       "type": "Microsoft.Storage/storageAccounts",
       "name": "[variables('storageAccountName')]",
-      "location": "[resourceGroup().location]",
-      "properties": {
-        "accountType": "Standard_LRS"
-      }
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "Standard_LRS"
+      },
+      "kind": "StorageV2"
     },
     {
-      "apiVersion": "[variables('apiVersion')]",
+      "apiVersion": "2020-06-01",
       "type": "Microsoft.Compute/availabilitySets",
       "name": "[concat(parameters('namespace'), 'set')]",
-      "location": "[resourceGroup().location]",
+      "location": "[parameters('location')]",
       "properties": {}
     },
     {
-      "apiVersion": "[variables('apiVersion')]",
+      "apiVersion": "2020-05-01",
       "type": "Microsoft.Network/virtualNetworks",
       "name": "[parameters('networkSettings').virtualNetworkName]",
-      "location": "[resourceGroup().location]",
+      "location": "[parameters('location')]",
       "properties": {
         "addressSpace": {
           "addressPrefixes": [

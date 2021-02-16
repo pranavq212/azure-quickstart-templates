@@ -1,6 +1,16 @@
 # VMM Analytics
 
-[![Deploy to Azure](http://azuredeploy.net/deploybutton.png)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fazure%2Fazure-quickstart-templates%2Fmaster%2Foms-vmm-analytics%2Fazuredeploy.json)
+![Azure Public Test Date](https://azurequickstartsservice.blob.core.windows.net/badges/oms-vmm-analytics/PublicLastTestDate.svg)
+![Azure Public Test Result](https://azurequickstartsservice.blob.core.windows.net/badges/oms-vmm-analytics/PublicDeployment.svg)
+
+![Azure US Gov Last Test Date](https://azurequickstartsservice.blob.core.windows.net/badges/oms-vmm-analytics/FairfaxLastTestDate.svg)
+![Azure US Gov Last Test Result](https://azurequickstartsservice.blob.core.windows.net/badges/oms-vmm-analytics/FairfaxDeployment.svg)
+
+![Best Practice Check](https://azurequickstartsservice.blob.core.windows.net/badges/oms-vmm-analytics/BestPracticeResult.svg)
+![Cred Scan Check](https://azurequickstartsservice.blob.core.windows.net/badges/oms-vmm-analytics/CredScanResult.svg)
+
+[![Deploy to Azure](https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/1-CONTRIBUTION-GUIDE/images/deploytoazure.svg?sanitize=true)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fazure%2Fazure-quickstart-templates%2Fmaster%2Foms-vmm-analytics%2F%2Fazuredeploy.json) 
+[![Visualize](https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/1-CONTRIBUTION-GUIDE/images/visualizebutton.svg?sanitize=true)](http://armviz.io/#/?load=https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2Fazure-quickstart-templates%2Fmaster%oms-vmm-analytics%2Fazuredeploy.json)
 
 Virtual Machine Manager (VMM) Analytics solution in OMS provides a single view  of the jobs' status across multiple VMM instances that helps you gain insight about the health & performance of these jobs.
 
@@ -18,7 +28,7 @@ Use the following procedure:
 
 1.	Log on to the OMS space using your Azure subscription details.
 2.	Go to the [GitHub location](https://github.com/krnese/AzureDeploy/tree/master/OMS/MSOMS/Solutions/vmm) where the solution is available.
-3. Click [![Deploy to Azure](http://azuredeploy.net/deploybutton.png)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fazure%2Fazure-quickstart-templates%2Fmaster%2Foms-vmm-analytics%2Fazuredeploy.json).
+3. Click [![Deploy to Azure](https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/1-CONTRIBUTION-GUIDE/images/deploytoazure.svg?sanitize=true)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fazure%2Fazure-quickstart-templates%2Fmaster%2Foms-vmm-analytics%2Fazuredeploy.json).
 
     **Custom deployment** blade appears.
 
@@ -41,6 +51,8 @@ Use the following procedure:
 
 6. Go to your OMS workspace, check for the deployment of the solution **VMM Analytics** in your OMS space. The deployment comes with a Runbook by name **vmmanalytics**, which you use to run the job analytics.
 
+![VMM Analytics Runbook](images/vmm-analytics-runbook.png)
+
 7. After successful deployment, go to the solution,   select **lastRunTime** from  **Assets** > **variables**.  Set the **lastRunTime**
 in UTC string format "yyyy-MM-ddTHH:mm:ss.fffffffZ".
 
@@ -53,10 +65,18 @@ in UTC string format "yyyy-MM-ddTHH:mm:ss.fffffffZ".
 
 8. Create a runbook worker with **appropriate credentials**, which can read jobs data from your VMM instances. [Learn more](https://docs.microsoft.com/en-us/azure/automation/automation-hybrid-runbook-worker
 ).
+
+![VMM Analytics Credentials](images/vmm-analytics-credential.png)
+
 9. Create a schedule for the runbook **vmmanalytics** as per the required sync frequency. This will periodically push the new jobs data from VMM to OMS workspace.
 
-Job analytics will be displayed on Log Analytics based on these schedules.
+![VMM Analytics Schedule](images/vmm-analytics-schedule.png)
 
+Afterwards you must attach schedule created to the runbook **vmmanalytics** and set which Hybrid Worker use to contact the Virtual Machine Manager instance.
+
+![VMM Analytics Runbook Schedule and Parameters](images/vmm-analytics-runbook-schedule-parameters.png)
+
+Job analytics will be displayed on Log Analytics based on these schedules.
 
 ## View the job analytics
 Click **VMM Analytics** solution tile in your OMS workspace to view the job analytics.
@@ -66,5 +86,13 @@ You can view failed instances, errors, and queries for the jobs running on the s
 Here is an example screen:
 ![VMM Analtyics](images/vmm-analytics-log-analytics-screen.png)
 
+The dashboard of the solution also allows you to define the time range to filter, more accurately and to suit your needs, the jobs collected from Virtual Machine Manager.
+
+![VMM Analytics Custom Time Range](images/vmm-analytics-runbook-custom-timerange.png)
+
 ## Contact us
-In case of any queries or feedback, [contact us](vmmanalytics@microsoft.com)
+In case of any queries or feedback, [contact us](mailto:vmmanalytics@microsoft.com)
+
+## Related Community Articles
+[OMS Log Analytics: How to collect Virtual Machine Manager jobs](http://francescomolfese.it/en/2017/10/oms-log-analytics-come-collezionare-i-job-di-virtual-machine-manager/)
+

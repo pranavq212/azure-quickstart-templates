@@ -1,5 +1,5 @@
 {
-  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
     "omsLogAnalyticsWorkspaceName": {
@@ -29,7 +29,7 @@
     "solutionName": "S2D",
     "solutionId": "[concat(variables('solutionName'), ' [' , parameters('omsLogAnalyticsWorkspaceName'), ']')]",
     "solutionVersion": "1.0",
-    "solutionPublisher": "Cloudadministrator.net",
+    "solutionPublisher": "cloudadministrator.net",
     "solutionProduct": "[replace(concat(variables('solutionPublisher'),variables('solutionName')),' ','')]",
     "solutionPromotionCode": "",
     "solutionDescription": "OMS Solution for monitoring Storage Spaces Direct (S2D).",
@@ -48,7 +48,7 @@
           "location": "[parameters('omsLogAnalyticsWorkspaceLocation')]",
           "id": "[concat('/subscriptions/', subscription().subscriptionId, '/resourceGroups/', resourceGroup().name, '/providers/Microsoft.OperationalInsights/workspaces/', parameters('omsLogAnalyticsWorkspaceName'),'/views/', variables('solutionId'))]",
           "apiVersion": "2015-11-01-preview",
-          "dependson": [
+          "dependsOn": [
             "[concat('/subscriptions/', subscription().subscriptionId, '/resourceGroups/', resourceGroup().name, '/providers/Microsoft.OperationalInsights/workspaces/', parameters('omsLogAnalyticsWorkspaceName'))]"
           ],
           "properties": {

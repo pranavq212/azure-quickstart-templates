@@ -1,5 +1,5 @@
 {
-  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
     "publicIPDomainNameLabelOrchServer": {
@@ -22,10 +22,6 @@
       "defaultValue": "",
       "type": "string"
     },
-    "vmAdminPasswordOrchServer": {
-      "defaultValue": "",
-      "type": "securestring"
-    },
     "storageAccountName": {
       "defaultValue": "",
       "type": "string"
@@ -36,7 +32,7 @@
     },
     "location": {
       "type": "string",
-      "defaultValue": ""
+      "defaultValue": "[resourceGroup().location]"
     },
     "network-api-version": {
       "type": "string",
@@ -79,26 +75,43 @@
       "defaultValue": ""
     },
     "datameerTags": {
-        "type": "object"
+      "type": "object"
     },
     "trendmicroTags": {
-        "type": "object"
+      "type": "object"
     },
     "chefSoftwareTags": {
-        "type": "object"
+      "type": "object"
     },
     "quickstartTags": {
-        "type": "object"
+      "type": "object"
+    },
+    "authenticationType": {
+      "type": "string"
+    },
+    "vmAdminPasswordOrPublicKeyOrchServer": {
+      "type": "securestring"
     }
   },
   "variables": {
-    "publicIPAddressNameOrchServer": "publicipOrchestratorServer"
+    "publicIPAddressNameOrchServer": "publicipOrchestratorServer",
+    "linuxConfiguration": {
+      "disablePasswordAuthentication": true,
+      "ssh": {
+        "publicKeys": [
+          {
+            "path": "[concat('/home/', parameters('vmAdminUsernameOrchServer'), '/.ssh/authorized_keys')]",
+            "keyData": "[parameters('vmAdminPasswordOrPublicKeyOrchServer')]"
+          }
+        ]
+      }
+    }
   },
   "resources": [
     {
       "type": "Microsoft.Compute/virtualMachines",
       "name": "[parameters('vmNameOrchServer')]",
-      "apiVersion": "[parameters('compute-api-version')]",
+      "apiVersion": "2017-03-30",
       "location": "[parameters('location')]",
       "tags": {
         "program": "[parameters('tagvalues').program]",
@@ -120,9 +133,6 @@
           "osDisk": {
             "name": "[concat(parameters('vmNameOrchServer'),'-osDisk')]",
             "createOption": "FromImage",
-            "vhd": {
-              "uri": "[concat('https', '://', parameters('storageAccountName'), '.blob.core.windows.net','/', parameters('vmStorageAccountContainerName'),'/', parameters('vmNameOrchServer'),'-osdisk.vhd')]"
-            },
             "caching": "ReadWrite"
           },
           "dataDisks": []
@@ -130,11 +140,9 @@
         "osProfile": {
           "computerName": "[parameters('vmNameOrchServer')]",
           "adminUsername": "[parameters('vmAdminUsernameOrchServer')]",
-          "linuxConfiguration": {
-            "disablePasswordAuthentication": false
-          },
           "secrets": [],
-          "adminPassword": "[parameters('vmAdminPasswordOrchServer')]"
+          "adminPassword": "[parameters('vmAdminPasswordOrPublicKeyOrchServer')]",
+          "linuxConfiguration": "[if(equals(parameters('authenticationType'), 'password'), json('null'), variables('linuxConfiguration'))]"
         },
         "networkProfile": {
           "networkInterfaces": [
@@ -151,7 +159,7 @@
     {
       "type": "Microsoft.Compute/virtualMachines/extensions",
       "name": "[concat(parameters('vmNameOrchServer'),'/','installdockerandcompose')]",
-      "apiVersion": "[parameters('compute-api-version')]",
+      "apiVersion": "2015-05-01-preview",
       "location": "[parameters('location')]",
       "tags": {
         "program": "[parameters('tagvalues').program]",
@@ -173,7 +181,7 @@
     {
       "name": "orchestratorapplication",
       "type": "Microsoft.Resources/deployments",
-      "apiVersion": "[parameters('deployment-api-version2')]",
+      "apiVersion": "2015-01-01",
       "dependsOn": [
         "[concat('Microsoft.Compute/virtualMachines/', parameters('vmNameOrchServer'),'/extensions/installdockerandcompose')]"
       ],
@@ -184,23 +192,23 @@
           "contentVersion": "1.0.0.0"
         },
         "parameters": {
-          "location":{
+          "location": {
             "value": "[parameters('location')]"
           },
           "vmName": {
             "value": "[parameters('vmNameOrchServer')]"
           },
           "datameerTags": {
-                "value": "[parameters('datameerTags')]"
+            "value": "[parameters('datameerTags')]"
           },
           "trendmicroTags": {
-                "value": "[parameters('trendmicroTags')]"
+            "value": "[parameters('trendmicroTags')]"
           },
           "chefSoftwareTags": {
-                "value": "[parameters('chefSoftwareTags')]"
+            "value": "[parameters('chefSoftwareTags')]"
           },
           "quickstartTags": {
-                "value": "[parameters('quickstartTags')]"
+            "value": "[parameters('quickstartTags')]"
           }
         }
       }
@@ -208,7 +216,7 @@
     {
       "type": "Microsoft.Network/publicIPAddresses",
       "name": "[variables('publicIPAddressNameOrchServer')]",
-      "apiVersion": "[parameters('network-api-version')]",
+      "apiVersion": "2017-06-01",
       "location": "[parameters('location')]",
       "tags": {
         "program": "[parameters('tagvalues').program]",
@@ -228,7 +236,7 @@
     {
       "type": "Microsoft.Network/networkInterfaces",
       "name": "[parameters('networkInterfaceNameOrchServer')]",
-      "apiVersion": "[parameters('network-api-version')]",
+      "apiVersion": "2017-06-01",
       "location": "[parameters('location')]",
       "tags": {
         "program": "[parameters('tagvalues').program]",
@@ -267,7 +275,7 @@
     {
       "type": "Microsoft.Network/networkSecurityGroups",
       "name": "[parameters('networkSecurityGroupNameOrchServer')]",
-      "apiVersion": "[parameters('network-api-version')]",
+      "apiVersion": "2017-06-01",
       "location": "[parameters('location')]",
       "tags": {
         "program": "[parameters('tagvalues').program]",

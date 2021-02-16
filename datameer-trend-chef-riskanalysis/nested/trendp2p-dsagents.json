@@ -1,10 +1,10 @@
 {
-  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
     "location": {
       "type": "string",
-      "defaultValue": ""
+      "defaultValue": "[resourceGroup().location]"
     },
     "network-api-version": {
       "type": "string",
@@ -26,7 +26,7 @@
       "type": "string",
       "defaultValue": ""
     },
-    "adminPasswordDSAgent": {
+    "adminPasswordOrPublicKeyDSAgent": {
       "type": "securestring",
       "defaultValue": ""
     },
@@ -119,27 +119,41 @@
       "defaultValue": ""
     },
     "datameerTags": {
-        "type": "object"
+      "type": "object"
     },
     "trendmicroTags": {
-        "type": "object"
+      "type": "object"
     },
     "chefSoftwareTags": {
-        "type": "object"
+      "type": "object"
     },
     "quickstartTags": {
-        "type": "object"
+      "type": "object"
+    },
+    "authenticationType": {
+      "type": "string"
     }
   },
   "variables": {
     "publicIPAddressNameDSAWindows": "publicipdsawindows",
     "networkInterfaceNameDSAWindows": "[concat(parameters('vmNameDSAWindows'),'-nic')]",
     "publicIPAddressNameDSAgent": "publicipdsalinux",
-    "networkInterfaceNameDSAgent": "[concat(parameters('vmNameDSAgent'),'-nic')]"
+    "networkInterfaceNameDSAgent": "[concat(parameters('vmNameDSAgent'),'-nic')]",
+    "linuxConfiguration": {
+      "disablePasswordAuthentication": true,
+      "ssh": {
+        "publicKeys": [
+          {
+            "path": "[concat('/home/', parameters('adminUsernameDSAgent'), '/.ssh/authorized_keys')]",
+            "keyData": "[parameters('adminPasswordOrPublicKeyDSAgent')]"
+          }
+        ]
+      }
+    }
   },
   "resources": [
     {
-      "apiVersion": "[parameters('network-api-version')]",
+      "apiVersion": "2017-06-01",
       "type": "Microsoft.Network/publicIPAddresses",
       "name": "[concat(variables('publicIPAddressNameDSAWindows'),copyindex())]",
       "location": "[parameters('location')]",
@@ -161,7 +175,7 @@
       }
     },
     {
-      "apiVersion": "[parameters('network-api-version')]",
+      "apiVersion": "2017-06-01",
       "type": "Microsoft.Network/networkInterfaces",
       "name": "[concat(variables('networkInterfaceNameDSAWindows'),copyindex())]",
       "location": "[parameters('location')]",
@@ -196,7 +210,7 @@
       }
     },
     {
-      "apiVersion": "[parameters('compute-api-version')]",
+      "apiVersion": "2017-03-30",
       "type": "Microsoft.Compute/virtualMachines",
       "name": "[concat(parameters('vmNameDSAWindows'),copyindex())]",
       "location": "[parameters('location')]",
@@ -231,9 +245,6 @@
           },
           "osDisk": {
             "name": "[concat(parameters('vmNameDSAWindows'),copyindex(),'-osDisk')]",
-            "vhd": {
-              "uri": "[concat('https://',parameters('storageAccountName'),'.blob.core.windows.net/',parameters('vmStorageAccountContainerName'),'/',parameters('vmNameDSAWindows'),copyindex(),'-osdisk.vhd')]"
-            },
             "caching": "ReadWrite",
             "createOption": "FromImage"
           }
@@ -248,7 +259,7 @@
       }
     },
     {
-      "apiVersion": "[parameters('compute-api-version')]",
+      "apiVersion": "2015-05-01-preview",
       "type": "Microsoft.Compute/virtualMachines/extensions",
       "name": "[concat(parameters('vmNameDSAWindows'), copyindex(),'/Installation')]",
       "location": "[parameters('location')]",
@@ -282,7 +293,7 @@
       }
     },
     {
-      "apiVersion": "[parameters('network-api-version')]",
+      "apiVersion": "2017-06-01",
       "type": "Microsoft.Network/publicIPAddresses",
       "name": "[concat(variables('publicIPAddressNameDSAgent'),copyindex())]",
       "location": "[parameters('location')]",
@@ -304,7 +315,7 @@
       }
     },
     {
-      "apiVersion": "[parameters('network-api-version')]",
+      "apiVersion": "2017-06-01",
       "type": "Microsoft.Network/networkInterfaces",
       "name": "[concat(variables('networkInterfaceNameDSAgent'),copyindex())]",
       "location": "[parameters('location')]",
@@ -339,7 +350,7 @@
       }
     },
     {
-      "apiVersion": "[parameters('compute-api-version')]",
+      "apiVersion": "2017-03-30",
       "type": "Microsoft.Compute/virtualMachines",
       "name": "[concat(parameters('vmNameDSAgent'),copyindex())]",
       "location": "[parameters('location')]",
@@ -363,7 +374,8 @@
         "osProfile": {
           "computerName": "[parameters('vmNameDSAgent')]",
           "adminUsername": "[parameters('adminUsernameDSAgent')]",
-          "adminPassword": "[parameters('adminPasswordDSAgent')]"
+          "adminPassword": "[parameters('adminPasswordOrPublicKeyDSAgent')]",
+          "linuxConfiguration": "[if(equals(parameters('authenticationType'), 'password'), json('null'), variables('linuxConfiguration'))]"
         },
         "storageProfile": {
           "imageReference": {
@@ -373,10 +385,7 @@
             "version": "latest"
           },
           "osDisk": {
-            "name": "[concat(parameters('vmNameDSAgent'),copyindex(),'-osDisk')]",
-            "vhd": {
-              "uri": "[concat('https://',parameters('storageAccountName'),'.blob.core.windows.net/',parameters('vmStorageAccountContainerName'),'/',parameters('vmNameDSAgent'),copyindex(),'-osdisk.vhd')]"
-            },
+            "name": "[concat(parameters('vmNameDSAgent'),copyindex(),'-osDisk')]", 
             "caching": "ReadWrite",
             "createOption": "FromImage"
           }
@@ -391,7 +400,7 @@
       }
     },
     {
-      "apiVersion": "[parameters('compute-api-version')]",
+      "apiVersion": "2015-05-01-preview",
       "type": "Microsoft.Compute/virtualMachines/extensions",
       "name": "[concat(parameters('vmNameDSAgent'), copyindex(),'/Installation')]",
       "location": "[parameters('location')]",

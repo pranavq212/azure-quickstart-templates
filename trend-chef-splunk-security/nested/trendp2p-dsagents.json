@@ -1,10 +1,9 @@
 {
-  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
     "location": {
-      "type": "string",
-      "defaultValue": ""
+      "type": "string"
     },
     "network-api-version": {
       "type": "string",
@@ -139,7 +138,7 @@
   },
   "resources": [
     {
-      "apiVersion": "[parameters('network-api-version')]",
+      "apiVersion": "2017-06-01",
       "type": "Microsoft.Network/publicIPAddresses",
       "name": "[concat(variables('publicIPAddressNameDSAWindows'),copyindex())]",
       "location": "[parameters('location')]",
@@ -161,7 +160,7 @@
       }
     },
     {
-      "apiVersion": "[parameters('network-api-version')]",
+      "apiVersion": "2017-06-01",
       "type": "Microsoft.Network/networkInterfaces",
       "name": "[concat(variables('networkInterfaceNameDSAWindows'),copyindex())]",
       "location": "[parameters('location')]",
@@ -196,7 +195,7 @@
       }
     },
     {
-      "apiVersion": "[parameters('compute-api-version')]",
+      "apiVersion": "2017-03-30",
       "type": "Microsoft.Compute/virtualMachines",
       "name": "[concat(parameters('vmNameDSAWindows'),copyindex())]",
       "location": "[parameters('location')]",
@@ -231,9 +230,6 @@
           },
           "osDisk": {
             "name": "[concat(parameters('vmNameDSAWindows'),copyindex(),'-osDisk')]",
-            "vhd": {
-              "uri": "[concat('https://',parameters('storageAccountName'),'.blob.core.windows.net/',parameters('vmStorageAccountContainerName'),'/',parameters('vmNameDSAWindows'),copyindex(),'-osdisk.vhd')]"
-            },
             "caching": "ReadWrite",
             "createOption": "FromImage"
           }
@@ -248,7 +244,7 @@
       }
     },
     {
-      "apiVersion": "[parameters('compute-api-version')]",
+      "apiVersion": "2015-05-01-preview",
       "type": "Microsoft.Compute/virtualMachines/extensions",
       "name": "[concat(parameters('vmNameDSAWindows'), copyindex(),'/Installation')]",
       "location": "[parameters('location')]",
@@ -282,7 +278,7 @@
       }
     },
     {
-      "apiVersion": "[parameters('network-api-version')]",
+      "apiVersion": "2017-06-01",
       "type": "Microsoft.Network/publicIPAddresses",
       "name": "[concat(variables('publicIPAddressNameDSAgent'),copyindex())]",
       "location": "[parameters('location')]",
@@ -304,7 +300,7 @@
       }
     },
     {
-      "apiVersion": "[parameters('network-api-version')]",
+      "apiVersion": "2017-06-01",
       "type": "Microsoft.Network/networkInterfaces",
       "name": "[concat(variables('networkInterfaceNameDSAgent'),copyindex())]",
       "location": "[parameters('location')]",
@@ -339,7 +335,7 @@
       }
     },
     {
-      "apiVersion": "[parameters('compute-api-version')]",
+      "apiVersion":"2017-03-30",
       "type": "Microsoft.Compute/virtualMachines",
       "name": "[concat(parameters('vmNameDSAgent'),copyindex())]",
       "location": "[parameters('location')]",
@@ -374,9 +370,6 @@
           },
           "osDisk": {
             "name": "[concat(parameters('vmNameDSAgent'),copyindex(),'-osDisk')]",
-            "vhd": {
-              "uri": "[concat('https://',parameters('storageAccountName'),'.blob.core.windows.net/',parameters('vmStorageAccountContainerName'),'/',parameters('vmNameDSAgent'),copyindex(),'-osdisk.vhd')]"
-            },
             "caching": "ReadWrite",
             "createOption": "FromImage"
           }
@@ -391,7 +384,7 @@
       }
     },
     {
-      "apiVersion": "[parameters('compute-api-version')]",
+      "apiVersion": "2015-05-01-preview",
       "type": "Microsoft.Compute/virtualMachines/extensions",
       "name": "[concat(parameters('vmNameDSAgent'), copyindex(),'/Installation')]",
       "location": "[parameters('location')]",
